@@ -1,0 +1,35 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: central-server-config
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/maian3333/ridehub-config-repo.git
+          search-paths: '{application}'
+          clone-on-start: true
+          default-label: main
+        health:
+          repositories:
+            ridehub-config:
+              label: main
+              name: ridehub-config
+              profiles: active
+
+server:
+  port: 8888
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG
+    org.springframework.boot: INFO
