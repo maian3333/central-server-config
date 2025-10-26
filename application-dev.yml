@@ -1,35 +1,8 @@
 spring:
-  profiles:
-    active: dev
-  application:
-    name: central-server-config
-  cloud:
-    config:
-      server:
-        git:
-          uri: https://github.com/maian3333/ridehub-config-repo.git
-          search-paths: '{application}'
-          clone-on-start: true
-          default-label: main
-        health:
-          repositories:
-            ridehub-config:
-              label: main
-              name: ridehub-config
-              profiles: active
-
-server:
-  port: 8888
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  health:
-    show-details: always
-
-logging:
-  level:
-    org.springframework.cloud.config: DEBUG
-    org.springframework.boot: INFO
+  liquibase:
+    contexts: dev, faker
+    parameters:
+      csv_path: src/main/resources/config/liquibase
+  datasource:
+    url: "jdbc:mysql://${vault.sql-host}:${server.sql-port}/${server.sql-name}?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&allowLoadLocalInfile=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&connectTimeout=20000&socketTimeout=600000"
+    # url: "jdbc:mysql://localhost:3306/${server.sql-name}?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&allowLoadLocalInfile=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&connectTimeout=20000&socketTimeout=600000"
