@@ -134,7 +134,7 @@ spring:
           producer-properties:
             key.serializer: org.apache.kafka.common.serialization.StringSerializer
             value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-            schema.registry.url: http://appf4s.io.vn:8081
+            schema.registry.url: http://${vault.vps-host}:8081
             latest.compatibility.strict: false
           consumer-properties:
             key.deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
@@ -145,7 +145,7 @@ spring:
             specific.avro.reader: true
   data:
     redis:
-      host: ${REDIS_HOST:${vault.vps-host}} # appf4s.io.vn
+      host: ${REDIS_HOST:${vault.vps-host}} # ${vault.vps-host}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:${vault.app-f4-pass}} # f4security
       timeout: 3000
