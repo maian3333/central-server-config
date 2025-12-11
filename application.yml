@@ -84,7 +84,7 @@ spring:
       # ---- Kafka binder (shared client config) ----
       kafka:
         binder:
-          brokers: ${vault.vps-host}:9092
+          brokers: ${vault.vps-host}:9093
           auto-create-topics: true
           auto-add-partitions: true
           min-partition-count: 3
@@ -92,14 +92,23 @@ spring:
 
           # All raw Kafka client props belong under `configuration`
           configuration:
-            security.protocol: SSL
+            # SASL_SSL configuration with OAuth authentication
+            # REQUIRES: io.strimzi:kafka-oauth-client:0.15.0 dependency in each microservice
+            security.protocol: SASL_SSL
+            sasl.mechanism: OAUTHBEARER
+            sasl.jaas.config: >
+              org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required oauth.client.id="${vault.s2s-client-id}" oauth.client.secret="${vault.s2s-client-secret}" oauth.token.endpoint.uri="https://keycloak.${vault.vps-host}/realms/jhipster/protocol/openid-connect/token";
+            sasl.login.callback.handler.class: io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler
+            
+            # SSL configuration for SASL_SSL
             ssl.endpoint.identification.algorithm: ""
-            # SSL certificate configuration from Vault
             ssl.truststore.type: PEM
             ssl.truststore.certificates: ${vault.kafka-ca-cert}
             ssl.keystore.type: PEM
             ssl.keystore.certificate.chain: ${vault.kafka-broker-cert}
             ssl.keystore.key: ${vault.kafka-broker-key}
+            
+            # Connection settings
             connections.max.idle.ms: 540000
             metadata.max.age.ms: 300000
             reconnect.backoff.ms: 1000
