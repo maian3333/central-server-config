@@ -44,7 +44,7 @@ logging:
 management:
   health:
     elasticsearch:
-      enabled: false
+      endpoint: http://${vault.vps-host}:9200
   zipkin:
     tracing:
       endpoint: http://${vault.vps-host}:9411/api/v2/spans
@@ -242,7 +242,7 @@ jhipster:
   cache:
     redis:
       expiration: 3600
-      server: redis://:${vault.app-f4-pass}@${vault.vps-host}:6379
+      server: redis://:${vault.app-f4-pass}@localhost:6379
       cluster: false
     hazelcast: # Hazelcast distributed cache
       time-to-live-seconds: 3600
