@@ -1,0 +1,41 @@
+spring:
+  jpa:
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
+  liquibase:
+    contexts: dev, faker
+    parameters:
+      csv_path: /app/config/data
+  cloud:      
+    consul:
+      # enabled: true
+      # host: consul.${vault.vps-host}
+      # port: 443
+      # scheme: https
+
+      # # TLS configuration
+      # tls:
+      #   skip-verify: true
+
+
+      # Consul Discovery (service registration/discovery)
+      discovery:
+        # enabled: true
+        service-name: ${SERVER_NAME}
+        # prefer-ip-address: true
+        ip-address: ${vault.vps-host}
+        port: ${SERVER_PORT}
+        # instance-id: ${SERVER_NAME} 
+        # tags: urlprefix-/
+        # service-path: /
+        # scheme: https
+
+        # # Health check configuration
+        # health-check-path: /management/health
+        # health-check-interval: 15s
+        # health-check-tls-skip-verify: true
+
+        # # ACL token for discovery
+        # acl-token: ${CONSUL_HTTP_TOKEN:}

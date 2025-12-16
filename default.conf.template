@@ -102,53 +102,56 @@ server {
     listen 443 ssl;
     server_name consul.${DOMAIN};
 
-    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
 
-    # Docker DNS resolver
     resolver 127.0.0.11 ipv6=off;
 
-    # ======================
-    #  A. API /v1 -> dùng ACL
-    # ======================
+    # =========================
+    # A. Consul API (/v1/*)
+    # =========================
     location ~* ^/v1/ {
+
         access_by_lua_block {
-            if ngx.var.uri == "/v1/status/leader"
-            or ngx.var.uri == "/v1/agent/self" then
-                return
-            end
-
             local headers = ngx.req.get_headers()
-            local header_token = headers["x-consul-token"]
-
-            local args = ngx.req.get_uri_args()
-            local query_token = args["token"]
-
-            if (header_token == "${CONSUL_HTTP_TOKEN}") or (query_token == "${CONSUL_HTTP_TOKEN}") then
-                if header_token then
-                    ngx.req.clear_header("X-Consul-Token")
-                end
-                if query_token then
-                    args["token"] = nil
-                    ngx.req.set_uri_args(args)
-                end
-                return
+            
+            -- Check for token in multiple places
+            local token = headers["X-Consul-Token"] 
+                       or ngx.var.arg_token  -- Query parameter ?token=xxx
+                       or headers["Authorization"]  -- Bearer token
+            
+            -- Extract Bearer token if present
+            if token and string.match(token, "^Bearer ") then
+                token = string.sub(token, 8)
             end
 
-            ngx.status = ngx.HTTP_FORBIDDEN
-            ngx.say("Forbidden - invalid Consul ACL token")
-            return ngx.exit(ngx.HTTP_FORBIDDEN)
+            if not token then
+                ngx.status = ngx.HTTP_FORBIDDEN
+                ngx.say("Missing Consul ACL token")
+                return ngx.exit(ngx.HTTP_FORBIDDEN)
+            end
+
+            -- Block anonymous token
+            if token == "00000000-0000-0000-0000-000000000002" then
+                ngx.status = ngx.HTTP_FORBIDDEN
+                ngx.say("Anonymous token not allowed")
+                return ngx.exit(ngx.HTTP_FORBIDDEN)
+            end
+            
+            -- Set token for Consul
+            ngx.req.set_header("X-Consul-Token", token)
         }
 
         proxy_pass http://consul:8500;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Consul-Token $http_x_consul_token;
     }
 
-    # ======================
-    #  B. UI / (mọi thứ còn lại) -> dùng Keycloak
-    # ======================
+    # =========================
+    # B. Consul UI (/)
+    # =========================
     location / {
         access_by_lua_block {
             local opts = {
@@ -156,14 +159,14 @@ server {
                 discovery = "https://keycloak.${DOMAIN}/realms/jhipster/.well-known/openid-configuration",
                 client_id = "${OIDC_CLIENT_ID}",
                 client_secret = "${OIDC_CLIENT_SECRET}",
-                scope = "openid email profile",
+                scope = "openid profile email",
                 ssl_verify = "no"
             }
 
             local res, err = require("resty.openidc").authenticate(opts)
 
             if err then
-                ngx.status = 403
+                ngx.status = ngx.HTTP_FORBIDDEN
                 ngx.say(err)
                 return ngx.exit(ngx.HTTP_FORBIDDEN)
             end
@@ -176,7 +179,6 @@ server {
         proxy_set_header Authorization $http_authorization;
     }
 }
-
 
 # RedisInsight server block with Keycloak authentication
 server {
